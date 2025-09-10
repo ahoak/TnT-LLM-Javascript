@@ -1,0 +1,23 @@
+{
+  "name": "cascadiajs",
+  "version": "1.0.0",
+  "main": "runClustering.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@azure/identity": "^4.11.1",
+    "@dsnp/parquetjs": "^1.8.7",
+    "dotenv": "^17.2.2",
+    "js-tiktoken": "^1.0.21",
+    "ollama": "^0.5.17",
+    "openai": "^5.16.0",
+    "parquetjs-lite": "^0.8.7",
+    "tiktoken": "^1.0.22",
+    "zod": "^3.25.76",
+    "zod-to-json-schema": "^3.24.6"
+  }
+}
