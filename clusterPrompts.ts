@@ -1,36 +1,57 @@
+import { z } from 'zod';
+import { zodToJsonSchema } from 'zod-to-json-schema';
+import { ChatRecord, ClusterTable, InitialClusterTable } from './types';
 
-const z = require('zod');
-const { zodToJsonSchema } = require('zod-to-json-schema')
-const { summariesToMarkdown } = require('./utils');
+import { summariesToMarkdown } from './utils';
 
+// ------------------ Schemas ------------------
 
-
-const TableRatingSchema = z.object({
-    rating: z.number().describe('The rank of the cluster, from 1 to 100'),
-    explaination: z.string().describe('The explaination of the rating'),
-    suggestedEdits: z.string().optional().describe('The suggested edits for the cluster, if applicable'),
-});
-const ClusterInfoSchema = z.object({
-    label: z.string().describe('The name of the cluster'),
-    description: z.string().describe('The description of the cluster'),
+export const TableRatingSchema = z.object({
+  rating: z.number().describe('The rank of the cluster, from 1 to 100'),
+  explaination: z.string().describe('The explaination of the rating'),
+  suggestedEdits: z.string().optional().describe('The suggested edits for the cluster, if applicable')
 });
 
-const UpdatedClusterListObject = z.object({
-    updatedTable: z.array(ClusterInfoSchema).describe('An array of clusters and their descriptions'),
-    tableRating: TableRatingSchema.describe('The rating of the reference table and explaination'),
+export const ClusterInfoSchema = z.object({
+  label: z.string().describe('The name of the cluster'),
+  description: z.string().describe('The description of the cluster')
 });
 
-const InitialClusterListObject = z.object({
-    clusters: z.array(ClusterInfoSchema).describe('An array of clusters and their descriptions for updated taxonomy'),
+
+export const InitialClusterListObject = z.object({
+  table: z.array(ClusterInfoSchema).describe('An array of clusters and their descriptions for updated taxonomy')
 });
 
-const InitialClusterListSchema = zodToJsonSchema(InitialClusterListObject);
-const UpdatedClusterListSchema = zodToJsonSchema(UpdatedClusterListObject);
+export const UpdatedClusterListObject = z.object({
+  updatedTable: z.array(ClusterInfoSchema).describe('An array of clusters and their descriptions'),
+  tableRating: TableRatingSchema.describe('The rating of the reference table and explaination')
+});
+
+export const InitialClusterListSchema = zodToJsonSchema(InitialClusterListObject);
+export const UpdatedClusterListSchema = zodToJsonSchema(UpdatedClusterListObject);
+
+// Summary schema (used in optional summarization stage)
+export const summarySchema = z.object({
+  summary: z
+    .string()
+    .describe(
+      'The summary of the conversation, focusing on the main topic and key points, in 50 words or less.'
+    )
+});
+export const summaryJsonSchema = zodToJsonSchema(summarySchema);
+
+// ------------------ Prompt Generators ------------------
 
 
-function generateInitialClustersPrompt(data, useCase, maxClusters,clusterNameLength, customOutputFormat){ 
-    
-    return  `
+
+export function generateInitialClustersPrompt(
+  data: ChatRecord[],
+  useCase: string,
+  maxClusters: number,
+  clusterNameLength: number,
+  customOutputFormat: string
+): string {
+  return `
     # Goal: 
     Your goal is to classify the input data into meaningful categories for the given use case. 
     -**Data**: The input is a markdown table with summaries for a list of human-AI conversations, including the following fields: 
@@ -62,18 +83,16 @@ function generateInitialClustersPrompt(data, useCase, maxClusters,clusterNameLen
     -You can ignore low quality or ambigous data points. 
 
     ${customOutputFormat}
-    `
+    `;
 }
 
-const summarySchema = z.object({
-    summary: z.string().describe('The summary of the conversation, focusing on the main topic and key points, in 50 words or less.'),
-});
-
-const summaryJsonSchema = zodToJsonSchema(summarySchema);
-
-
-function generateSummarizationPrompt( data, useCase, summaryLength, customOutputFormat) {
-    return `
+export function generateSummarizationPrompt(
+  data: string,
+  useCase: string,
+  summaryLength: number,
+  customOutputFormat: string
+): string {
+  return `
         # GOAL:
         Summarize the input text for the given use case. 
         You input is a conversation history between a User and an AI agent.
@@ -94,12 +113,21 @@ function generateSummarizationPrompt( data, useCase, summaryLength, customOutput
         -Provide your answer in **English** only 
        
         ${customOutputFormat}
-    `
+    `;
 }
 
-// Update prompt
-function generateClusterUpdatePrompt(clusters, data, maxClusters, useCase, suggestionLimit, customOutputFormat) {
-    return `
+
+export function generateClusterUpdatePrompt(
+  clusters: ClusterTable | InitialClusterTable | string,
+  data: ChatRecord[],
+  maxClusters: number,
+  useCase: string,
+  clusterNameLength: number,
+  suggestionLimit: number,
+  customOutputFormat: string
+): string {
+
+  return `
         # Goal: 
         Your goal is to review the given reference table based on the input data for the specified use case, then update the reference table if needed.
           -You will be given a reference cluster table ,which is built on existing data. The reference table will be used to classify new data points.
@@ -159,11 +187,18 @@ function generateClusterUpdatePrompt(clusters, data, maxClusters, useCase, sugge
 
         ## Q3: If you decide to edit the reference table, please provide your updated reference table. If you decide not to edit the reference table, please output the original reference table.
 
-    `
+    `;
 }
 
-function generateReviewPrompt(clusters, maxClusters, useCase, clusterNameLength,suggestionLimit, customOutputFormat) {
-    return `
+export function generateReviewPrompt(
+  clusters: ClusterTable | string,
+  maxClusters: number,
+  useCase: string,
+  clusterNameLength: number,
+  suggestionLimit: number,
+  customOutputFormat: string
+): string {
+  return `
     # Goal: 
     Your goal is to review the given reference cluster table based on the requirements, and the specified use case, then update the reference table if needed.
     -You will be given a reference cluster table, which is built on existing data. The reference table will be used to classify new data points.
@@ -216,15 +251,15 @@ function generateReviewPrompt(clusters, maxClusters, useCase, clusterNameLength,
 
 
     ${customOutputFormat}
-    `
+    `;
 }
 
-module.exports = {
-    generateInitialClustersPrompt,
-    generateSummarizationPrompt,
-    generateClusterUpdatePrompt,
-    generateReviewPrompt,
-    summaryJsonSchema,
-    InitialClusterListSchema,
-    UpdatedClusterListSchema,
+export default {
+  generateInitialClustersPrompt,
+  generateSummarizationPrompt,
+  generateClusterUpdatePrompt,
+  generateReviewPrompt,
+  summaryJsonSchema,
+  InitialClusterListSchema,
+  UpdatedClusterListSchema
 };

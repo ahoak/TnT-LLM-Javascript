@@ -1,8 +1,11 @@
 {
-  "name": "cascadiajs",
+  "name": "tnt-llm-javascript",
   "version": "1.0.0",
   "main": "runClustering.js",
   "scripts": {
+    "build": "tsc",
+    "cluster": "npm run build && node dist/runClustering.js",
+    "cluster:watch": "tsc --watch",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
@@ -19,5 +22,9 @@
     "tiktoken": "^1.0.22",
     "zod": "^3.25.76",
     "zod-to-json-schema": "^3.24.6"
+  },
+  "devDependencies": {
+    "@types/json-schema": "^7.0.15",
+    "typescript": "^5.9.2"
   }
 }
