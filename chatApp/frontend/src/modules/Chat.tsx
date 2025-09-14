@@ -1,28 +1,25 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import type { ChatMessage, ChatResponseChunk, ChatFullResponse, TopicClassificationResponse } from '../../../shared/types.ts';
+import type { ChatMessage, ChatResponseChunk, ChatFullResponse, ClassificationResponse } from '../../../shared/types.ts';
 
-interface PendingMessage {
-  id: string;
-  role: 'assistant';
-  content: string;
-}
 
 export const Chat: React.FC = () => {
   const [conversationId, setConversationId] = useState<string | undefined>();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [streamingId, setStreamingId] = useState<string | null>(null);
-  const [topic, setTopic] = useState<string | null>(null);
-  const [topicLoading, setTopicLoading] = useState(false);
+  const [userIntent, setIntent] = useState<string | null>(null);
+  const [userBookingPhase, setBookingPhase] = useState<string | null>(null);
+  const [userTourType, setTourType] = useState<string | null>(null);
+  const [userIntentLoading, setIntentLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, streamingId]);
 
-  async function classifyTopic(nextConversationId: string | undefined, msgs: ChatMessage[]) {
+  async function classifyuserIntent(nextConversationId: string | undefined, msgs: ChatMessage[]) {
     try {
-      setTopicLoading(true);
+      setIntentLoading(true);
       const body: any = nextConversationId ? { conversationId: nextConversationId } : { messages: msgs.map(m => ({ role: m.role, content: m.content })) };
 
       const resp = await fetch('http://localhost:3000/api/classify-topic', {
@@ -31,12 +28,14 @@ export const Chat: React.FC = () => {
         body: JSON.stringify(body)
       });
       if (!resp.ok) return;
-      const data: TopicClassificationResponse = await resp.json();
-      setTopic(data.label);
+      const data: ClassificationResponse = await resp.json();
+      setIntent(data.intent || null);
+      setBookingPhase(data.bookingPhase || null);
+      setTourType(data.tourType || null);
     } catch (e) {
       // silent
     } finally {
-      setTopicLoading(false);
+      setIntentLoading(false);
     }
   }
 
@@ -90,7 +89,7 @@ export const Chat: React.FC = () => {
             if (chunk.done) {
               setStreamingId(null);
               // classify after streaming completion
-              classifyTopic(conversationId ?? chunk.conversationId, messages);
+              classifyuserIntent(conversationId ?? chunk.conversationId, messages);
             } else {
               setMessages((prev: ChatMessage[]) => {
                 const existingIndex = prev.findIndex((m: ChatMessage) => m.id === chunk.id);
@@ -129,7 +128,7 @@ export const Chat: React.FC = () => {
     setMessages((prev: ChatMessage[]) => {
       const next = [...prev, data.message];
       // classify after full response
-      classifyTopic(data.conversationId, next);
+      classifyuserIntent(data.conversationId, next);
       return next;
     });
   }, [conversationId, input]);
@@ -138,11 +137,24 @@ export const Chat: React.FC = () => {
 
   return (
     <div style={{ fontFamily: 'system-ui, sans-serif', maxWidth: 720, margin: '0 auto', padding: '1rem' }}>
-  <h1>AI Chat {(topicLoading || topic) && (
-    <span style={{ fontSize: '0.6em', fontWeight: 400, marginLeft: 8, color: '#555' }}>
-      Topic: {topicLoading ? 'Detecting…' : topic}
-    </span>
-  )}</h1>
+  <h1>AI Chat {(userIntentLoading || userIntent) && (
+    <>
+      <div style={{ fontSize: '0.6em', fontWeight: 400, marginLeft: 8, color: '#555' }}>
+        User Intent: {userIntentLoading ? 'Detecting…' : userIntent}
+      </div>
+    </>
+  )}
+  {userBookingPhase && (
+    <div style={{ fontSize: '0.6em', fontWeight: 400, marginLeft: 8, color: '#555' }}>
+      Booking Phase: {userBookingPhase}
+    </div>
+  )}
+  {userTourType && (
+    <div style={{ fontSize: '0.6em', fontWeight: 400, marginLeft: 8, color: '#555' }}>
+      Tour Type: {userTourType}
+    </div>
+  )}
+  </h1>
       <div style={{ border: '1px solid #ccc', borderRadius: 8, padding: 12, minHeight: 300, background: '#fafafa' }}>
         {messages.map(m => (
           <div key={m.id} style={{ padding: '4px 0' }}>
@@ -161,8 +173,8 @@ export const Chat: React.FC = () => {
           placeholder="Ask something..."
           style={{ flex: 1, padding: 8 }}
         />
-        <button type="submit" disabled={!input.trim()}>Send (Stream)</button>
-        <button type="button" onClick={() => send(false)} disabled={!input.trim()}>Send (Full)</button>
+        <button type="submit" disabled={!input.trim()}>Send</button>
+        {/* <button type="button" onClick={() => send(false)} disabled={!input.trim()}>Send (Full)</button> */}
       </form>
     </div>
   );

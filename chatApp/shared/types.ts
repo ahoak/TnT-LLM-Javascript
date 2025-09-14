@@ -34,7 +34,61 @@ export interface TopicClassificationRequest {
   messages?: { role: string; content: string }[];
 }
 
-export interface TopicClassificationResponse {
-  label: string;
+export interface ClassificationResponse {
+  intent?: string;
+  bookingPhase?: string;
+  tourType?: string;
   raw?: string; // raw LLM output before normalization
+}
+
+export interface Conversation {
+  id: string;
+  messages: ChatMessage[];
+}
+
+export interface BookingIntent {
+  intent: string;
+  definition: string;
+  inclusions: string[];
+  exclusions: string[];
+  example: string;
+}
+
+// -----------------------------
+// Database Records Typings
+// -----------------------------
+export interface DestinationRecord {
+  id: string;
+  name: string;
+  description: string;
+}
+
+export interface TourTypeRecordRaw {
+  id: string;
+  name?: string;            // Some entries use name/description
+  description?: string;
+  tour_type?: string;       // Some entries use tour_type/definition
+  definition?: string;
+}
+
+export interface TourRecord {
+  id: string;
+  name: string;
+  destination_id: string;
+  tour_type_ids: string[];
+  duration_days: number;
+  price_usd: number;
+  season: string;
+  description: string;
+}
+
+export interface NormalizedTourTypeRecord {
+  id: string;
+  name: string;       // unified display name
+  description: string; // unified description/definition
+}
+
+export interface NormalizedTourRecord extends TourRecord {
+  destination?: DestinationRecord;
+  tourTypes: NormalizedTourTypeRecord[];
 }
