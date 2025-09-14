@@ -10,11 +10,11 @@ export function generateSystemPrompt(userIntentResponse: ClassificationResponse 
   console.log('Conversations for prompt:', retrievalContext);
   let intentPartSpecification = ""
   if (userIntentResponse) {
-    if (userIntentResponse.intent == "BrowseTours" || userIntentResponse.intent == "CompareTours" || userIntentResponse.intent == "BookTour" || userIntentResponse.intent == "RequestQuote") {
+    if (userIntentResponse.intent == "Browse Tours" || userIntentResponse.intent == "Compare Tours"  || userIntentResponse.intent == "Request Quote") {
       intentPartSpecification = `Your goal is to help the user find and book tours based on the provided data.`
-    } else if (userIntentResponse.intent == "ModifyBooking" || userIntentResponse.intent == "CancelTour") {
+    } else if (userIntentResponse.intent == "Modify Booking" || userIntentResponse.intent == "Cancel Tour") {
       intentPartSpecification = `Your goal is to help the user modify their existing booking based on a current reservation`
-    } else if (userIntentResponse.intent == "GetSupport") {
+    } else if (userIntentResponse.intent == "Get Support") {
       intentPartSpecification = `Your goal is to provide technical support and assistance to the user regarding their tours and bookings.`
     }
   }
@@ -30,17 +30,35 @@ export function generateSystemPrompt(userIntentResponse: ClassificationResponse 
 }
 
 
-export function generateClassifyTopicPrompt(msgText:string): string{
+export function generateClassifyIntentPrompt(msgText:string): string{
 
   const bookingIntentLabels = bookingIntents.reduce((accum, item) =>{
-    const entry = `${item.intent}: ${item.definition}
-    `;
+    const entry = `${item.intent}: ${item.definition} \n Examples: ${JSON.stringify(item.examples)} \n`;
     accum += entry + '\n';
     return accum
   }, '')
+    return `
+    Given a conversation between user and AI agent, classify the user's primary intent into one of the following labels:
+
+
+    ## Booking Intent Labels (select one)
+    ${bookingIntentLabels}
+
+    If none fit, respond with: Other
+
+    Return ONLY the label string with exact casing for the intent label.
+
+    ## Conversation
+    ${msgText}
+`
+}
+
+
+export function generateClassifyBookingPrompt(msgText:string): string{
+
 
   const bookingPhaseLabels = bookingPhase.reduce((accum, item) =>{
-    const entry = `${item.booking_phase}: ${item.definition}`
+    const entry = `${item.booking_phase}: ${item.definition} \n Examples: ${JSON.stringify(item.examples)} \n`;
     accum += entry + '\n';
     return accum
   }, '')
@@ -51,14 +69,8 @@ export function generateClassifyTopicPrompt(msgText:string): string{
     return accum
   }, '')
     return `
-    Given a conversation between user and AI agent, classify the user's primary intent, booking phase, and tour type into one of the following labels:
-    
+    Given a conversation between user and AI agent, classify the user's booking phase, and tour type into one of the following labels:
 
-    ## Offers:
-    ${JSON.stringify(advertiseOffers)}
-
-    ## Booking Intent Labels (select one)
-    ${bookingIntentLabels}
     
     ## Booking Phase Labels (select one)
     ${bookingPhaseLabels}
@@ -68,12 +80,14 @@ export function generateClassifyTopicPrompt(msgText:string): string{
 
     If none fit, respond with: Other
 
-    Return ONLY the label string with exact casing.
+    Return ONLY the label string with exact casing for each of the labels ( booking phase, and tour type). These labels should be independent.
 
     ## Conversation
     ${msgText}
 `
 }
+
+
 
 export function generateAdvertisementPrompt(msgText:string, bookingIntentLabels: ClassificationResponse): string{
  

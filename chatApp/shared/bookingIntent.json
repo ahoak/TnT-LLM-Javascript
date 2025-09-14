@@ -1,7 +1,7 @@
 [
   {
-    "intent": "BrowseTours",
-    "definition": "The user is exploring available tours without expressing a specific intent to book, compare, or request a quote. This is a discovery phase where the user is seeking inspiration or general options.",
+    "intent": "Browse Tours",
+    "definition": "The user is exploring available tours without expressing a specific intent to book or request a quote. This is a discovery phase where the user is seeking inspiration or general options.",
     "inclusions": [
       "Asking for available tours by destination, theme, or season",
       "Requesting recommendations",
@@ -18,27 +18,9 @@
       "I’m interested in cultural tours."
     ]
   },
+
   {
-    "intent": "BookTour",
-    "definition": "The user expresses a clear intent to book a tour or is actively trying to complete a booking. This includes selecting dates, confirming availability, or requesting booking assistance.",
-    "inclusions": [
-      "Requesting to book a specific tour",
-      "Asking for help completing a booking",
-      "Confirming availability for booking"
-    ],
-    "exclusions": [
-      "Asking for prices",
-      "Comparing tours",
-      "General browsing"
-    ],
-    "examples": [
-      "I want to book the Italy tour for June.",
-      "Can you help me reserve this trip?",
-      "I’m trying to check out but it’s not working."
-    ]
-  },
-  {
-    "intent": "CompareOptions",
+    "intent": "Compare Options",
     "definition": "The user is evaluating multiple tours or destinations and is seeking help to compare features, prices, or experiences. The focus is on decision-making between options.",
     "inclusions": [
       "Asking for differences between tours",
@@ -57,7 +39,7 @@
     ]
   },
   {
-    "intent": "RequestQuote",
+    "intent": "Request Quote",
     "definition": "The user is asking for a price estimate or quote for a specific tour or travel configuration. This includes requests for custom pricing or group rates.",
     "inclusions": [
       "Asking for prices for specific dates or group sizes",
@@ -76,7 +58,7 @@
     ]
   },
   {
-    "intent": "ModifyBooking",
+    "intent": "Modify Booking",
     "definition": "The user wants to change an existing booking. This includes changing dates, traveler details, or upgrading services.",
     "inclusions": [
       "Changing travel dates or destinations",
@@ -94,7 +76,7 @@
     ]
   },
   {
-    "intent": "CancelTour",
+    "intent": "Cancel Tour",
     "definition": "The user wants to cancel a tour they’ve already booked. This may include asking about refund policies or cancellation fees.",
     "inclusions": [
       "Requesting to cancel a booking",
@@ -112,7 +94,7 @@
     ]
   },
   {
-    "intent": "GetSupport",
+    "intent": "Get Support",
     "definition": "The user is experiencing a technical issue or needs help with the website, booking process, or account. This is not related to tour content but to functionality or service.",
     "inclusions": [
       "Technical issues (e.g., payment errors, login problems)",
@@ -128,5 +110,20 @@
       "I didn’t receive my confirmation email.",
       "I’m having trouble logging in."
     ]
+  },
+  {
+    "intent": "Reservation Inquiry",
+    "definition": "The user is asking for information regarding an existing reservation such a visa requirements, travel logisitcs, or documentations.",
+    "inclusions": [
+      "Asking about visa requirements",
+      "Inquiring about travel logistics",
+      "Requesting information on necessary documentation"
+    ],
+    "examples": [
+      "What visa do I need for my trip to Italy?",
+      "Can you provide details on the travel itinerary?",
+      "What documents are required for my booking?"
+    ]
+    
   }
 ]

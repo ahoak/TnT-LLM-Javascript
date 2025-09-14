@@ -5,7 +5,8 @@
     "description": "Comprehensive coverage for hiking, rafting, and outdoor activities.",
     "link": "https://affiliate.example.com/adventure-insurance",
     "tour_type": ["Adventure Tour"],
-    "booking_phase": "Booking-In-Progress"
+    "booking_phase": "Booking-In-Progress",
+    "imageUrl": "offer_001_image.png"
   },
   {
     "id": "offer_002",
@@ -13,7 +14,8 @@
     "description": "Travel in style with premium foot hammock for your trips.",
     "link": "https://affiliate.example.com/luxury-luggage",
     "tour_type": ["Solo Traveler Tour", "Adventure Tour"],
-    "booking_phase": "Pre-Booking"
+    "booking_phase": "Pre-Booking",
+    "imageUrl": "offer_002_image.png"
   },
   {
     "id": "offer_004",
@@ -21,7 +23,8 @@
     "description": "Affordable coverage for the whole family, including kids.",
     "link": "https://affiliate.example.com/family-insurance",
     "tour_type": ["Family Tour"],
-    "booking_phase": "Booking-In-Progress"
+    "booking_phase": "Booking-In-Progress",
+    "imageUrl": "offer_004_image.png"
   },
   {
     "id": "offer_005",
@@ -29,7 +32,8 @@
     "description": "Essential gear and tips for solo travelers.",
     "link": "https://affiliate.example.com/solo-kit",
     "tour_type": ["Solo Traveler Tour"],
-    "booking_phase": "Post-Booking"
+    "booking_phase": "Post-Booking",
+    "imageUrl": "offer_005_image.png"
   },
   {
     "id": "offer_006",
@@ -37,15 +41,17 @@
     "description": "Stay connected at sea with discounted Wi-Fi plans.",
     "link": "https://affiliate.example.com/cruise-wifi",
     "tour_type": ["Cruise"],
-    "booking_phase": "Booking-In-Progress"
+    "booking_phase": "Booking-In-Progress",
+    "imageUrl": "offer_006_image.png"
   },
   {
     "id": "offer_008",
-    "title": "Children's Travel Activity Pack",
-    "description": "Keep kids entertained with travel-themed activity packs.",
+    "title": "Children's Travel Suitcase Set",
+    "description": "Keep kids fashionable and organized with our fun suitcase sets.",
     "link": "https://affiliate.example.com/kids-activities",
     "tour_type": ["Family Tour"],
-    "booking_phase": "Post-Booking"
+    "booking_phase": "Post-Booking",
+    "imageUrl": "offer_008_image.png"
   },
    {
     "id": "offer_010",
@@ -53,6 +59,7 @@
     "description": "Get digital guidebooks for top cultural destinations.",
     "link": "https://affiliate.example.com/guidebooks",
     "tour_type": ["Cultural Tour", "Family Tour"],
-    "booking_phase": "Pre-Booking"
+    "booking_phase": "Pre-Booking",
+    "imageUrl": "offer_010_image.png"
   }
 ]

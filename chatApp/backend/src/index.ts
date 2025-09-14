@@ -21,7 +21,8 @@ import dotenv from 'dotenv';
 import { azureOAI, azureOAIStream } from './azureOpenAIClient.js';
 import { ollamaLLM } from './ollamaClient.js';
 import { generateSystemPrompt, 
-  generateClassifyTopicPrompt,
+  generateClassifyBookingPrompt,
+  generateClassifyIntentPrompt,
   generateClassifyDestinationRecord, 
   generateAdvertisementPrompt
 } from './generatePrompts.js';
@@ -29,6 +30,7 @@ import { adSchema, ClassificationAdResponse, conversations,
   destinationRecordSchema, 
   formatRetrievalContext, 
   getOrCreateConversation, 
+  metadataIntentLabelsSchema, 
   MetaDataLabels, 
   metadataLabelsSchema, 
   safeJSONParse 
@@ -57,7 +59,7 @@ app.get('/api/image/:file', (req: Request, res: Response) => {
   });
 });
 
-// Additional simple mount for legacy /shared/images (without /static prefix)
+
 app.use('/shared/images', express.static(SHARED_IMAGES_DIR));
 
 
@@ -71,7 +73,6 @@ app.post('/api/chat', async (req: Request, res: Response) => {
     return res.status(400).json({ error: 'No messages provided' });
   }
 
-  // Append new user message to conversation history firstn
   const userMessage: ChatMessage = {
     id: nanoid(),
     role: 'user',
@@ -183,21 +184,20 @@ async function classifyDesitinationRecord(userMessage: string, retrievalContext:
 }
 
 async function classifyUserIntent(userMessage: string): Promise<ClassificationResponse | null> {
-  
-  const prompt = generateClassifyTopicPrompt(userMessage);
-  const raw = await azureOAI(prompt, metadataLabelsSchema);
+  const intentPrompt = generateClassifyIntentPrompt(userMessage)
+  const bookingPrompt = generateClassifyBookingPrompt(userMessage);
+  const bookingResponse = await azureOAI(bookingPrompt, metadataLabelsSchema);
+  const intentResponse = await azureOAI(intentPrompt, metadataIntentLabelsSchema)
 
-  console.log("Raw topic classification response:", raw);
+  console.log("Booking classification response:", bookingResponse);
+  console.log("Intent classification response:", intentResponse);
 
-  const parsed = safeJSONParse<MetaDataLabels>(raw);
-  let labels:MetaDataLabels = {}
-    if (parsed.ok) {
-      labels = parsed.value;
-      console.log('Parsed initial clusters.');
-    } else {
-      console.error('Failed to parse initial cluster JSON:', parsed.error.message);
-    }
-  return { ...labels, raw };
+
+  const bookingParsed = safeJSONParse<MetaDataLabels>(bookingResponse);
+  const intentParsed = safeJSONParse<MetaDataLabels>(intentResponse);
+  let labels: MetaDataLabels = bookingParsed.ok ? bookingParsed.value  : {};
+  labels = intentParsed.ok ? {...labels, ...intentParsed.value } : labels;
+  return { ...labels, raw: [bookingResponse, intentResponse ] };
 }
 
 
@@ -207,21 +207,19 @@ async function getFakePersonalizedContent(userMessage: string, bookingMetadataLa
   const prompt = generateAdvertisementPrompt(userMessage, bookingMetadataLabels);
   const raw = await azureOAI(prompt, adSchema);
 
-  console.log("Raw topic classification response:", raw);
-
   const parsed = safeJSONParse<MetaDataLabels>(raw);
   let labels:ClassificationAdResponse = {}
   let offers:AdvertisementOffer[] = []
     if (parsed.ok) {
       labels = parsed.value;
       const id = labels.id
-      offers = advertiseOffers.filter(item => item.id === labels.id).map(item => ({...item, "imageUrl": `${item.id}_image.jpg`}))
+      offers = advertiseOffers.filter(item => item.id === labels.id)
     } else {
       console.error('Failed to parse', parsed.error.message);
     }
     console.log("Combining generateAdvertisementPrompt response:", { ...labels, raw, offers });
 
-  return { ...labels, raw, offers };
+  return { ...labels, raw: [raw], offers };
 }
 
 

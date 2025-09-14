@@ -11,11 +11,13 @@ import { zodToJsonSchema } from 'zod-to-json-schema';
 import databaseRecords from '../../shared/mockDatabase.json' with { type: 'json' };
 
 const metadataLabelsSchemaObject = z.object({
-  intent: z.string().describe('The intent of the booking'),
   bookingPhase: z.string().describe('The phase of the booking process'),
   tourType: z.string().describe('The type of tour being booked')
 });
 
+export const metadataIntentLabelsSchema = zodToJsonSchema(z.object({
+  intent: z.string().describe('The intent of the booking'),
+}));
 export const metadataLabelsSchema = zodToJsonSchema(metadataLabelsSchemaObject);
 
 const destinationRecordSchemaObject = z.object({

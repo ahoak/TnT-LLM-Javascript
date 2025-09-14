@@ -76,7 +76,7 @@
       "id": "tour_002",
       "name": "10-Day Sourthern Japan Explorer Tour",
       "destination_id": "dest_002",
-      "tour_type_ids": ["type_005", "type_006" ],
+      "tour_type_ids": ["type_005", "type_006", "type_002" ],
       "duration_days": 8,
       "price_usd": 2800,
       "season": "Winter",

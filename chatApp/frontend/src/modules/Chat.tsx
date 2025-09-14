@@ -1,8 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import type { ChatMessage, ChatResponseChunk, ChatFullResponse, ClassificationResponse, AdvertisementOffer } from '../../../shared/types.ts';
 
+// Vite environment variable (define VITE_API_URL in .env if overriding backend URL)
+const BASE_URL = (import.meta as any).env?.VITE_API_URL ?? 'http://localhost:3000';
 
 export const Chat: React.FC = () => {
+  // use CSS classes for badges under new theme
   const [conversationId, setConversationId] = useState<string | undefined>();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
@@ -23,7 +26,7 @@ export const Chat: React.FC = () => {
       setIntentLoading(true);
       const body: any = nextConversationId ? { conversationId: nextConversationId } : { messages: msgs.map(m => ({ role: m.role, content: m.content })) };
 
-      const resp = await fetch('http://localhost:3000/api/classify-topic', {
+      const resp = await fetch(`${BASE_URL}/api/classify-topic`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
@@ -56,7 +59,7 @@ export const Chat: React.FC = () => {
   setMessages((prev: ChatMessage[]) => [...prev, userMessage]);
 
   if (stream) {
-      const resp = await fetch('http://localhost:3000/api/chat', {
+      const resp = await fetch(`${BASE_URL}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -121,7 +124,7 @@ export const Chat: React.FC = () => {
       return;
     }
 
-    const resp = await fetch('http://localhost:3000/api/chat', {
+    const resp = await fetch(`${BASE_URL}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ conversationId, messages: [{ role: 'user', content: userContent }], stream: false })
@@ -139,62 +142,80 @@ export const Chat: React.FC = () => {
 
 
   return (
-  <div style={{ fontFamily: 'system-ui, sans-serif', maxWidth: 720, margin: '0 auto', padding: '1rem' }}>
-  <h1>AI Chat {(userIntentLoading || userIntent) && (
-    <>
-      <div style={{ fontSize: '0.6em', fontWeight: 400, marginLeft: 8, color: '#555' }}>
-        User Intent: {userIntentLoading ? 'Detecting…' : userIntent}
-      </div>
-    </>
-  )}
-  {userBookingPhase && (
-    <div style={{ fontSize: '0.6em', fontWeight: 400, marginLeft: 8, color: '#555' }}>
-      Booking Phase: {userBookingPhase}
-    </div>
-  )}
-  {userTourType && (
-    <div style={{ fontSize: '0.6em', fontWeight: 400, marginLeft: 8, color: '#555' }}>
-      Tour Type: {userTourType}
-    </div>
-  )}
-  
-  </h1>
-      <div style={{ border: '1px solid #ccc', borderRadius: 8, padding: 12, minHeight: 300, background: '#fafafa' }}>
-        {messages.map(m => (
-          <div key={m.id} style={{ padding: '4px 0' }}>
-            <strong>{m.role === 'user' ? 'You' : 'AI'}:</strong> {m.content}
+    <div style={{ fontFamily: 'var(--font-body)', maxWidth: 1160, margin: '0 auto', padding: '0 1rem 2rem' }} id="chat-root">
+      <h2 style={{ marginBottom: 8 }}>Travel Assistant</h2>
+      <p style={{ margin: '0 0 1.2rem', fontSize: '0.95rem', color: 'var(--color-text-muted)' }}>Ask about destinations, tour styles, seasons or planning phases — I’ll tailor context & offers.</p>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 28 }}>
+        {/* Left Column (Chat) */}
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* Chat Panel with fixed height and internal scroll */}
+          <div className="card" style={{
+            display: 'flex',
+            flexDirection: 'column',
+            height: '68vh',
+            maxHeight: '68vh',
+            borderRadius: 'var(--radius-lg)',
+            overflow: 'hidden'
+          }}>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '14px 16px 10px', scrollbarWidth: 'thin', background: 'var(--color-surface)' }}>
+              {messages.map(m => (
+                <div key={m.id} style={{ padding: '4px 0', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                  <strong>{m.role === 'user' ? 'You' : 'AI'}:</strong> {m.content}
+                </div>
+              ))}
+              {streamingId && (
+                <div style={{ opacity: 0.7, fontStyle: 'italic', marginTop: 4, fontSize: '.7rem', color: 'var(--color-text-muted)' }}>Assistant is composing…</div>
+              )}
+              <div ref={bottomRef} />
+            </div>
+            <form onSubmit={e => { e.preventDefault(); send(true); }} style={{ display: 'flex', gap: 10, padding: '12px 14px 14px', borderTop: '1px solid var(--color-border)', background: 'var(--color-surface-alt)' }}>
+              <input value={input} onChange={e => setInput(e.target.value)} placeholder="Ask anything travel..." style={{ flex: 1, padding: '11px 13px', border: '1px solid var(--color-border)', borderRadius: 10, fontSize: '.85rem', background: '#fff', fontFamily: 'var(--font-body)' }} />
+              <button type="submit" disabled={!input.trim()} className="btn btn-primary" style={{ opacity: input.trim() ? 1 : 0.55, cursor: input.trim() ? 'pointer' : 'not-allowed', fontSize: '.8rem' }}>Send</button>
+            </form>
           </div>
-        ))}
-        {streamingId && (
-          <div style={{ opacity: 0.7 }}>AI is typing...</div>
-        )}
-        <div ref={bottomRef} />
+          {(userIntentLoading || userIntent || userBookingPhase || userTourType) && (
+            <div className="section-soft" style={{ marginTop: 14, display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
+              {(userIntentLoading || userIntent) && (
+                <span className="badge">
+                  <span className="badge-label">Intent</span>
+                  {userIntentLoading ? 'Detecting…' : userIntent}
+                </span>
+              )}
+              {userBookingPhase && (
+                <span className="badge">
+                  <span className="badge-label">Phase</span>
+                  {userBookingPhase}
+                </span>
+              )}
+              {userTourType && (
+                <span className="badge">
+                  <span className="badge-label">Tour Type</span>
+                  {userTourType}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Right Column (Offers Sidebar) */}
+        <aside style={{ flex: '0 0 260px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {userAdContent.length > 0 && (
+            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-accent)', letterSpacing: 0.6 }}>Recommended Offers</div>
+          )}
+          {userAdContent.length === 0 && (
+            <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)' }}>No offers yet. Ask about destinations or trip styles to surface suggestions.</div>
+          )}
+          {userAdContent.map((ad, index) => (
+            <div key={index} className="offer-card">
+              {ad.imageUrl && (
+                <img src={`${BASE_URL}/shared/images/${ad.imageUrl}`} alt={ad.title} style={{ width: '100%', height: 'auto', objectFit: 'cover' }} loading="lazy" />
+              )}
+              <div className="offer-title">{ad.title}</div>
+              <p className="offer-desc">{ad.description.length > 140 ? ad.description.slice(0, 137) + '…' : ad.description}</p>
+            </div>
+          ))}
+        </aside>
       </div>
-      <form onSubmit={e => { e.preventDefault(); send(true); }} style={{ marginTop: 12, display: 'flex', gap: 8 }}>
-        <input
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          placeholder="Ask something..."
-          style={{ flex: 1, padding: 8 }}
-        />
-        <button type="submit" disabled={!input.trim()}>Send</button>
-        {/* <button type="button" onClick={() => send(false)} disabled={!input.trim()}>Send (Full)</button> */}
-      </form>
-      { userAdContent.length > 0 &&  (
-        userAdContent.map((ad, index) => (
-          <div key={index} style={{ border: '1px solid #ccc', borderRadius: 8, padding: 12, marginTop: 20, background: '#e0f7fa' }}>
-            <h2>Recommended Offer</h2>
-            <h3>{ad.title}</h3>
-            {ad.imageUrl && (
-              <img src={`http://localhost:3000/shared/images/${ad.imageUrl}`} alt={ad.title} style={{ maxWidth: '100%', height: 'auto' }} />
-
-
-            )}
-            <p>{ad.description}</p>
-          </div>
-        ))
-    )}
-
-  </div>
-  )
+    </div>
+  );
 };

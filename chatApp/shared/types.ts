@@ -46,7 +46,7 @@ export interface ClassificationResponse {
   intent?: string;
   bookingPhase?: string;
   tourType?: string;
-  raw?: string; // raw LLM output before normalization
+  raw?: string[]; // raw LLM output before normalization
   offers?: AdvertisementOffer[]; // matched offers from advertiseOffers.json
 }
 
@@ -63,9 +63,7 @@ export interface BookingIntent {
   example: string;
 }
 
-// -----------------------------
-// Database Records Typings
-// -----------------------------
+
 export interface DestinationRecord {
   id: string;
   name: string;
@@ -100,4 +98,20 @@ export interface NormalizedTourTypeRecord {
 export interface NormalizedTourRecord extends TourRecord {
   destination?: DestinationRecord;
   tourTypes: NormalizedTourTypeRecord[];
+}
+
+export interface AdvertisementOffer {
+  id: string;
+  title: string;
+  description: string;
+  link?: string;              // original external/affiliate link (optional)
+  affiliate_url?: string;     // if renamed externally
+  tour_type: string[]         // matches tour_types entries (e.g. "Adventure Tour")
+  imageUrl?: string;          // injected on the server (e.g. offer_001_image.jpg)
+}
+
+export interface ClassificationAdResponse {
+  id?: string;
+  offers?: AdvertisementOffer[];
+  raw?: string; // raw LLM content
 }
