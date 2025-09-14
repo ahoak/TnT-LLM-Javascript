@@ -8,25 +8,57 @@ import type {
   ChatResponseChunk, 
   TopicClassificationRequest, 
   ClassificationResponse, 
-  NormalizedTourRecord
+  NormalizedTourRecord,
+  AdvertisementOffer
 
 } from '../../shared/types.js';
 import databaseRecords from '../../shared/mockDatabase.json' with { type: 'json' };
-
+import advertiseOffers from '../../shared/advertiseOffers.json' with { type: 'json' };
+import path from 'path';
+import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 
 import { azureOAI, azureOAIStream } from './azureOpenAIClient.js';
 import { ollamaLLM } from './ollamaClient.js';
 import { generateSystemPrompt, 
   generateClassifyTopicPrompt,
-  generateClassifyDestinationRecord 
+  generateClassifyDestinationRecord, 
+  generateAdvertisementPrompt
 } from './generatePrompts.js';
-import { conversations, destinationRecordSchema, formatRetrievalContext, getOrCreateConversation, MetaDataLabels, metadataLabelsSchema, safeJSONParse } from './utils.js';
+import { adSchema, ClassificationAdResponse, conversations, 
+  destinationRecordSchema, 
+  formatRetrievalContext, 
+  getOrCreateConversation, 
+  MetaDataLabels, 
+  metadataLabelsSchema, 
+  safeJSONParse 
+} from './utils.js';
 dotenv.config();
 
 const app = express();
 app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
 app.use(express.json());
+
+// Image directory resolution
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const SHARED_IMAGES_DIR = path.resolve(__dirname, '../../shared/images');
+
+// Static mount (cache-friendly path)
+app.use('/static/shared/images', express.static(SHARED_IMAGES_DIR));
+
+// Direct file endpoint fallback (returns 404 JSON if missing)
+app.get('/api/image/:file', (req: Request, res: Response) => {
+  const file = req.params.file;
+  res.sendFile(path.join(SHARED_IMAGES_DIR, file), err => {
+    if (err) {
+      res.status(404).json({ error: 'Image not found' });
+    }
+  });
+});
+
+// Additional simple mount for legacy /shared/images (without /static prefix)
+app.use('/shared/images', express.static(SHARED_IMAGES_DIR));
 
 
 
@@ -165,8 +197,31 @@ async function classifyUserIntent(userMessage: string): Promise<ClassificationRe
     } else {
       console.error('Failed to parse initial cluster JSON:', parsed.error.message);
     }
-
   return { ...labels, raw };
+}
+
+
+
+async function getFakePersonalizedContent(userMessage: string, bookingMetadataLabels: ClassificationResponse ): Promise<ClassificationResponse | null> {
+  
+  const prompt = generateAdvertisementPrompt(userMessage, bookingMetadataLabels);
+  const raw = await azureOAI(prompt, adSchema);
+
+  console.log("Raw topic classification response:", raw);
+
+  const parsed = safeJSONParse<MetaDataLabels>(raw);
+  let labels:ClassificationAdResponse = {}
+  let offers:AdvertisementOffer[] = []
+    if (parsed.ok) {
+      labels = parsed.value;
+      const id = labels.id
+      offers = advertiseOffers.filter(item => item.id === labels.id).map(item => ({...item, "imageUrl": `${item.id}_image.jpg`}))
+    } else {
+      console.error('Failed to parse', parsed.error.message);
+    }
+    console.log("Combining generateAdvertisementPrompt response:", { ...labels, raw, offers });
+
+  return { ...labels, raw, offers };
 }
 
 
@@ -185,7 +240,10 @@ app.post('/api/classify-topic', async (req: Request, res: Response) => {
   const transcript = history.map(m => (m.role === 'assistant' ? 'AI' : 'User') + ': ' + m.content).join('\n');
   // truncate transcript 250 tokens
   const resp = await classifyUserIntent(transcript);
-  res.json(resp);
+  const adResponse = await getFakePersonalizedContent(transcript, resp || {});
+  console.log("Advertisement Response:", adResponse);
+  const combiningResponse = { ...resp, ...adResponse };
+  res.json(combiningResponse);
 });
 
 const port = process.env.PORT || 3000;

@@ -35,7 +35,7 @@
     {
         "id": "type_004",
         "tour_type": "Cruise",
-        "definition": "A tour conducted on a cruise ship, often including multiple destinations, onboard entertainment, and all-inclusive amenities."
+        "definition": "A tour conducted on a cruise ship, often including multiple destinations, onboard entertainment, and all-inclusive amenities. No children under 12 allowed."
     },
     {
         "id": "type_005",
@@ -56,7 +56,7 @@
       "id": "tour_001",
       "name": "10-Day Guided Tour of Italy",
       "destination_id": "dest_001",
-      "tour_type_ids": ["type_001", "type_002", "type_004", "type_006"],
+      "tour_type_ids": ["type_001", "type_002", "type_006"],
       "duration_days": 10,
       "price_usd": 2500,
       "season": "Spring",
@@ -91,6 +91,29 @@
       "price_usd": 2200,
       "season": "Summer",
       "description": "A thrilling adventure through the Andes to Machu Picchu, combining physical activity with cultural exploration. Suitable for solo travelers and adventure seekers."
+    },
+    {
+      "id": "tour_004",
+      "name": "Cruise to the Caribbean",
+      "destination_id": "dest_004",
+      "tour_type_ids": ["type_004"],
+      "duration_days": 7,
+      "price_usd": 3000,
+      "season": "Winter",
+      "description": "A fun-filled cruise designed for families, featuring kid-friendly activities, entertainment, and excursions to beautiful Caribbean destinations."
+    }
+  ],
+  "travel_client" : [{
+      "id": "client_001",
+      "name": "Client_A",
+      "contact_email": "",
+      "tour_reservation" : "tour_003"
+    },
+    {
+      "id": "client_002",
+      "name": "Client_B",
+      "contact_email": "",
+      "tour_reservation" : "tour_002"
     }
   ]
 }

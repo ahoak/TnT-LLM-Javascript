@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import type { ChatMessage, ChatResponseChunk, ChatFullResponse, ClassificationResponse } from '../../../shared/types.ts';
+import type { ChatMessage, ChatResponseChunk, ChatFullResponse, ClassificationResponse, AdvertisementOffer } from '../../../shared/types.ts';
 
 
 export const Chat: React.FC = () => {
@@ -10,6 +10,7 @@ export const Chat: React.FC = () => {
   const [userIntent, setIntent] = useState<string | null>(null);
   const [userBookingPhase, setBookingPhase] = useState<string | null>(null);
   const [userTourType, setTourType] = useState<string | null>(null);
+  const [userAdContent, setUserAdContent] = useState<AdvertisementOffer[]>([]);
   const [userIntentLoading, setIntentLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
@@ -29,9 +30,11 @@ export const Chat: React.FC = () => {
       });
       if (!resp.ok) return;
       const data: ClassificationResponse = await resp.json();
+      console.log("ClassificationResponse:", data);
       setIntent(data.intent || null);
       setBookingPhase(data.bookingPhase || null);
       setTourType(data.tourType || null);
+      setUserAdContent( data.offers || []);
     } catch (e) {
       // silent
     } finally {
@@ -89,7 +92,7 @@ export const Chat: React.FC = () => {
             if (chunk.done) {
               setStreamingId(null);
               // classify after streaming completion
-              classifyuserIntent(conversationId ?? chunk.conversationId, messages);
+              await classifyuserIntent(conversationId ?? chunk.conversationId, messages);
             } else {
               setMessages((prev: ChatMessage[]) => {
                 const existingIndex = prev.findIndex((m: ChatMessage) => m.id === chunk.id);
@@ -136,7 +139,7 @@ export const Chat: React.FC = () => {
 
 
   return (
-    <div style={{ fontFamily: 'system-ui, sans-serif', maxWidth: 720, margin: '0 auto', padding: '1rem' }}>
+  <div style={{ fontFamily: 'system-ui, sans-serif', maxWidth: 720, margin: '0 auto', padding: '1rem' }}>
   <h1>AI Chat {(userIntentLoading || userIntent) && (
     <>
       <div style={{ fontSize: '0.6em', fontWeight: 400, marginLeft: 8, color: '#555' }}>
@@ -154,6 +157,7 @@ export const Chat: React.FC = () => {
       Tour Type: {userTourType}
     </div>
   )}
+  
   </h1>
       <div style={{ border: '1px solid #ccc', borderRadius: 8, padding: 12, minHeight: 300, background: '#fafafa' }}>
         {messages.map(m => (
@@ -176,6 +180,21 @@ export const Chat: React.FC = () => {
         <button type="submit" disabled={!input.trim()}>Send</button>
         {/* <button type="button" onClick={() => send(false)} disabled={!input.trim()}>Send (Full)</button> */}
       </form>
-    </div>
-  );
+      { userAdContent.length > 0 &&  (
+        userAdContent.map((ad, index) => (
+          <div key={index} style={{ border: '1px solid #ccc', borderRadius: 8, padding: 12, marginTop: 20, background: '#e0f7fa' }}>
+            <h2>Recommended Offer</h2>
+            <h3>{ad.title}</h3>
+            {ad.imageUrl && (
+              <img src={`http://localhost:3000/shared/images/${ad.imageUrl}`} alt={ad.title} style={{ maxWidth: '100%', height: 'auto' }} />
+
+
+            )}
+            <p>{ad.description}</p>
+          </div>
+        ))
+    )}
+
+  </div>
+  )
 };

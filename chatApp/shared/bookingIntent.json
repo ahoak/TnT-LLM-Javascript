@@ -38,25 +38,6 @@
     ]
   },
   {
-    "intent": "AskQuestion",
-    "definition": "The user is asking for factual information or clarification about tours, policies, services, or the website. The question is not part of a booking, comparison, or quote request.",
-    "inclusions": [
-      "Questions about inclusions, policies, or logistics",
-      "Clarifying details about a tour or service",
-      "Asking about travel requirements"
-    ],
-    "exclusions": [
-      "Asking for prices",
-      "Comparing tours",
-      "Booking-related questions"
-    ],
-    "examples": [
-      "Do your tours include meals?",
-      "What’s your cancellation policy?",
-      "Is travel insurance included?"
-    ]
-  },
-  {
     "intent": "CompareOptions",
     "definition": "The user is evaluating multiple tours or destinations and is seeking help to compare features, prices, or experiences. The focus is on decision-making between options.",
     "inclusions": [

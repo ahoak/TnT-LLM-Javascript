@@ -3,6 +3,7 @@ import { ClassificationResponse, NormalizedTourRecord } from "shared/types.js";
 import bookingIntents from '../../shared/bookingIntent.json' with { type: 'json' };
 import bookingPhase from '../../shared/bookingPhase.json' with { type: 'json' };
 import databaseRecords from '../../shared/mockDatabase.json' with { type: 'json' };
+import advertiseOffers from '../../shared/advertiseOffers.json' with { type: 'json' };
 
 
 export function generateSystemPrompt(userIntentResponse: ClassificationResponse | null, retrievalContext: NormalizedTourRecord[], conversations: any[]): string {
@@ -51,6 +52,10 @@ export function generateClassifyTopicPrompt(msgText:string): string{
   }, '')
     return `
     Given a conversation between user and AI agent, classify the user's primary intent, booking phase, and tour type into one of the following labels:
+    
+
+    ## Offers:
+    ${JSON.stringify(advertiseOffers)}
 
     ## Booking Intent Labels (select one)
     ${bookingIntentLabels}
@@ -64,6 +69,28 @@ export function generateClassifyTopicPrompt(msgText:string): string{
     If none fit, respond with: Other
 
     Return ONLY the label string with exact casing.
+
+    ## Conversation
+    ${msgText}
+`
+}
+
+export function generateAdvertisementPrompt(msgText:string, bookingIntentLabels: ClassificationResponse): string{
+ 
+    return `
+    Given a conversation between user and AI agent, classify the user's primary intent, booking phase, and tour type into one of the following labels:
+
+    Requirements:
+    -Check booking_phase and tourType to determine the most relevant advertisement offer.
+    -Priotize booking_phase prior to tourType when selecting advertisement offer.
+    
+    Return ONLY the label string with exact casing.
+    
+    ## Offers:
+    ${advertiseOffers.map(item => `id: ${item.id}, title: ${item.title}, tour_type: ${JSON.stringify(item.tour_type)}, booking_phase: ${item.booking_phase}`).join('\n')}
+
+    ## Booking Metadata
+    ${JSON.stringify(bookingIntentLabels)}
 
     ## Conversation
     ${msgText}

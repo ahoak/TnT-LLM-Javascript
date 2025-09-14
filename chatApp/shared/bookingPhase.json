@@ -1,7 +1,7 @@
 [
   {
     "booking_phase": "Pre-Booking",
-    "definition": "The user is in the early exploration stage, showing interest in travel but not yet evaluating specific options or making decisions.",
+    "definition": "The user is in the early exploration stage, showing interest in travel but not yet evaluating specific options or making decisions. The user is actively evaluating specific tours or destinations, comparing options, or asking detailed questions to help make a decision.",
     "examples": [
       "I’m thinking about taking a trip this year.",
       "What destinations do you recommend?",
@@ -9,16 +9,7 @@
     ]
   },
   {
-    "booking_phase": "Booking Consideration",
-    "definition": "The user is actively evaluating specific tours or destinations, comparing options, or asking detailed questions to help make a decision.",
-    "examples": [
-      "What’s the difference between the 7-day and 10-day Italy tours?",
-      "Does the Greece tour include meals?",
-      "Which tour is better for families?"
-    ]
-  },
-  {
-    "booking_phase": "Booking In Progress",
+    "booking_phase": "Booking-In-Progress",
     "definition": "The user is in the process of booking a tour or requesting assistance with completing a booking.",
     "examples": [
       "I’m trying to book the Japan tour but the payment isn’t going through.",
@@ -33,15 +24,6 @@
       "Can I change my travel dates?",
       "When will I receive my itinerary?",
       "I need to add another traveler to my booking."
-    ]
-  },
-  {
-    "booking_phase": "Cancellation/Modification",
-    "definition": "The user wants to cancel or significantly modify an existing booking, including requests for refunds or policy clarification.",
-    "examples": [
-      "I need to cancel my tour.",
-      "What’s your refund policy?",
-      "Can I switch to a different tour?"
     ]
   }
 ]

@@ -32,9 +32,19 @@ const destinationRecordSchemaObject = z.object({
 });
 export const destinationRecordSchema= zodToJsonSchema(destinationRecordSchemaList);
 
+
+export const adSchema= zodToJsonSchema(z.object({
+  id: z.string().describe('Id of the advertisement'),
+}).describe('Advertisement id schema'));
+
 export interface MetaDataLabels {
   intent?: string;
   bookingPhase?: string;
+}
+
+export interface ClassificationAdResponse extends MetaDataLabels {
+    id?: string; // advertisement id
+    raw?: string; // raw LLM response for debugging
 }
 
 

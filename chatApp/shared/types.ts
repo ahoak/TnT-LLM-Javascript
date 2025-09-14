@@ -34,11 +34,20 @@ export interface TopicClassificationRequest {
   messages?: { role: string; content: string }[];
 }
 
+export interface AdvertisementOffer {
+  id: string;               // matches cluster id from classification
+  title: string;          // short title for the offer
+  imageUrl?: string;        // URL to image for this offer
+  description: string;     // short description for ad
+}
+
+
 export interface ClassificationResponse {
   intent?: string;
   bookingPhase?: string;
   tourType?: string;
   raw?: string; // raw LLM output before normalization
+  offers?: AdvertisementOffer[]; // matched offers from advertiseOffers.json
 }
 
 export interface Conversation {
