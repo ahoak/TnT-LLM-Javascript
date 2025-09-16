@@ -27,11 +27,10 @@ export interface TableRatingEntry {
 }
 
 export interface InitialClusterTable {
-  table: TableRatingEntry
+  table: TableRatingEntry;
 }
 
 export interface ClusterTable {
-  tableRating: TableRatingEntry           
-  updatedTable:  ClusterEntry[]
+  tableRating: TableRatingEntry;
+  updatedTable: ClusterEntry[];
 }
-

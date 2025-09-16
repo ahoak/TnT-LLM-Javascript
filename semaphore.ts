@@ -8,7 +8,9 @@ export class Semaphore {
 
   constructor(maxConcurrency: number) {
     if (!Number.isInteger(maxConcurrency) || maxConcurrency <= 0) {
-      throw new Error(`Semaphore maxConcurrency must be a positive integer (got ${maxConcurrency})`);
+      throw new Error(
+        `Semaphore maxConcurrency must be a positive integer (got ${maxConcurrency})`,
+      );
     }
     this.maxConcurrency = maxConcurrency;
   }
@@ -18,7 +20,7 @@ export class Semaphore {
       this.currentCount++;
       return;
     }
-    await new Promise<void>(resolve => this.queue.push(resolve));
+    await new Promise<void>((resolve) => this.queue.push(resolve));
     this.currentCount++;
   }
 
@@ -43,7 +45,6 @@ export class Semaphore {
       this.release();
     }
   }
-
 }
 
 export default Semaphore;

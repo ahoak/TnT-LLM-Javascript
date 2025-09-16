@@ -112,4 +112,58 @@ export async function azureOAI(
   return response?.choices?.[0]?.message?.content || '';
 }
 
+/**
+ * Streaming variant of azureOAI.
+ * Yields incremental content deltas as they arrive from Azure OpenAI.
+ * NOTE: Some Azure/OpenAI deployments may have limitations combining streaming with json_schema response_format.
+ * If schema streaming is unsupported, you may receive either no chunks or final structured JSON only.
+ */
+export async function* azureOAIStream(
+  chatInput: string | ChatMessage[],
+  jsonSchema?: any,
+  modelParameters?: AzureOAIModelParams,
+): AsyncGenerator<string, void, void> {
+  const client = await getClient();
+  const deploymentName = process.env.DEPLOYMENT_NAME || 'gpt-4.1-mini_2025-04-14';
+
+  const messages: ChatMessage[] =
+    typeof chatInput === 'string' ? [{ role: 'user', content: chatInput }] : chatInput;
+
+  let stream: AsyncIterable<any>;
+  if (jsonSchema) {
+    modelParameters = {
+      ...(modelParameters || {}),
+      response_format: {
+        type: 'json_schema',
+        json_schema: {
+          name: 'jsonOutput',
+          schema: jsonSchema,
+        },
+      },
+    };
+  }
+  try {
+    stream = await (client as any).chat.completions.create({
+      model: deploymentName,
+      messages,
+      stream: true,
+      ...modelParameters,
+    });
+  } catch (err) {
+    console.error('azureOAIStream: failed to initiate stream', (err as any)?.message || err);
+    return;
+  }
+
+  try {
+    for await (const chunk of stream as any) {
+      const delta: string | undefined = chunk?.choices?.[0]?.delta?.content;
+      if (delta) {
+        yield delta;
+      }
+    }
+  } catch (err) {
+    console.error('azureOAIStream: streaming error', (err as any)?.message || err);
+  }
+}
+
 export default azureOAI;

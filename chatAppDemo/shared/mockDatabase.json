@@ -1,0 +1,122 @@
+{
+  "destinations": [
+    {
+      "id": "dest_001",
+      "name": "Italy",
+      "description": "A classic European destination known for its rich history, art, cuisine, and scenic landscapes."
+    },
+    {
+      "id": "dest_002",
+      "name": "Japan",
+      "description": "A blend of ancient traditions and modern innovation, offering temples, cherry blossoms, and high-tech cities."
+    },
+    {
+      "id": "dest_003",
+      "name": "Peru",
+      "description": "Home to Machu Picchu and the Andes, Peru offers adventure, history, and vibrant culture."
+    }
+  ],
+  "tour_types": [
+    {
+      "id": "type_001",
+      "name": "Guided Tour",
+      "description": "A tour led by a professional guide who provides information, manages logistics, and ensures a structured experience."
+    },
+    {
+      "id": "type_002",
+      "name": "Family Tour",
+      "description": "A tour designed for families with children, offering kid-friendly activities, flexible schedules, and accommodations suitable for all ages."
+    },
+    {
+      "id": "type_003",
+      "name": "Adventure Tour",
+      "description": "A tour focused on physical activities and outdoor experiences such as hiking, rafting, or wildlife exploration."
+    },
+    {
+      "id": "type_004",
+      "tour_type": "Cruise",
+      "definition": "A tour conducted on a cruise ship, often including multiple destinations, onboard entertainment, and all-inclusive amenities. No children under 12 allowed."
+    },
+    {
+      "id": "type_005",
+      "tour_type": "Solo Traveler Tour",
+      "definition": "A tour tailored for individuals traveling alone, often with group settings to encourage social interaction and shared experiences."
+    },
+    {
+      "id": "type_006",
+      "tour_type": "Luxury Tour",
+      "definition": "A high-end tour offering premium accommodations, exclusive experiences, and personalized services. Designed for travelers seeking comfort and elegance."
+    },
+    {
+      "id": "type_007",
+      "tour_type": "Cultural Tour",
+      "definition": "A tour focused on exploring the traditions, history, art, and cuisine of a region. Often includes museum visits, local performances, and cultural workshops."
+    }
+  ],
+  "tours": [
+    {
+      "id": "tour_001",
+      "name": "10-Day Guided Tour of Italy",
+      "destination_id": "dest_001",
+      "tour_type_ids": ["type_001", "type_002", "type_006"],
+      "duration_days": 10,
+      "price_usd": 2500,
+      "season": "Spring",
+      "description": "Explore Italy's iconic cities, historical landmarks, and scenic countryside with a professional guide. Perfect for families and those seeking a structured yet immersive experience."
+    },
+    {
+      "id": "tour_002",
+      "name": "8-Day Cherry Blossom Season Tour",
+      "destination_id": "dest_002",
+      "tour_type_ids": ["type_001", "type_002", "type_007"],
+      "duration_days": 8,
+      "price_usd": 2800,
+      "season": "Spring",
+      "description": "Experience Japan's iconic cherry blossom season with guided tours of historic sites, cultural experiences, and family-friendly activities."
+    },
+    {
+      "id": "tour_002",
+      "name": "10-Day Sourthern Japan Explorer Tour",
+      "destination_id": "dest_002",
+      "tour_type_ids": ["type_005", "type_006", "type_002"],
+      "duration_days": 8,
+      "price_usd": 2800,
+      "season": "Winter",
+      "description": "Explore the highlights of Southern Japan with a mix of guided tours and solo travel experiences, perfect for individual travelers seeking both structure and freedom."
+    },
+    {
+      "id": "tour_003",
+      "name": "Inca Trail Adventure",
+      "destination_id": "dest_003",
+      "tour_type_ids": ["type_003", "type_001", "type_005"],
+      "duration_days": 7,
+      "price_usd": 2200,
+      "season": "Summer",
+      "description": "A thrilling adventure through the Andes to Machu Picchu, combining physical activity with cultural exploration. Suitable for solo travelers and adventure seekers."
+    },
+    {
+      "id": "tour_004",
+      "name": "Cruise to the Caribbean",
+      "destination_id": "dest_004",
+      "tour_type_ids": ["type_004"],
+      "duration_days": 7,
+      "price_usd": 3000,
+      "season": "Winter",
+      "description": "A fun-filled cruise designed for families, featuring kid-friendly activities, entertainment, and excursions to beautiful Caribbean destinations."
+    }
+  ],
+  "travel_client": [
+    {
+      "id": "client_001",
+      "name": "Client_A",
+      "contact_email": "",
+      "tour_reservation": "tour_003"
+    },
+    {
+      "id": "client_002",
+      "name": "Client_B",
+      "contact_email": "",
+      "tour_reservation": "tour_002"
+    }
+  ]
+}

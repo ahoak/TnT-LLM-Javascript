@@ -9,22 +9,26 @@ import { summariesToMarkdown } from './utils';
 export const TableRatingSchema = z.object({
   rating: z.number().describe('The rank of the cluster, from 1 to 100'),
   explaination: z.string().describe('The explaination of the rating'),
-  suggestedEdits: z.string().optional().describe('The suggested edits for the cluster, if applicable')
+  suggestedEdits: z
+    .string()
+    .optional()
+    .describe('The suggested edits for the cluster, if applicable'),
 });
 
 export const ClusterInfoSchema = z.object({
   label: z.string().describe('The name of the cluster'),
-  description: z.string().describe('The description of the cluster')
+  description: z.string().describe('The description of the cluster'),
 });
 
-
 export const InitialClusterListObject = z.object({
-  table: z.array(ClusterInfoSchema).describe('An array of clusters and their descriptions for updated taxonomy')
+  table: z
+    .array(ClusterInfoSchema)
+    .describe('An array of clusters and their descriptions for updated taxonomy'),
 });
 
 export const UpdatedClusterListObject = z.object({
   updatedTable: z.array(ClusterInfoSchema).describe('An array of clusters and their descriptions'),
-  tableRating: TableRatingSchema.describe('The rating of the reference table and explaination')
+  tableRating: TableRatingSchema.describe('The rating of the reference table and explaination'),
 });
 
 export const InitialClusterListSchema = zodToJsonSchema(InitialClusterListObject);
@@ -35,21 +39,19 @@ export const summarySchema = z.object({
   summary: z
     .string()
     .describe(
-      'The summary of the conversation, focusing on the main topic and key points, in 50 words or less.'
-    )
+      'The summary of the conversation, focusing on the main topic and key points, in 50 words or less.',
+    ),
 });
 export const summaryJsonSchema = zodToJsonSchema(summarySchema);
 
 // ------------------ Prompt Generators ------------------
-
-
 
 export function generateInitialClustersPrompt(
   data: ChatRecord[],
   useCase: string,
   maxClusters: number,
   clusterNameLength: number,
-  customOutputFormat: string
+  customOutputFormat: string = '',
 ): string {
   return `
     # Goal: 
@@ -90,7 +92,7 @@ export function generateSummarizationPrompt(
   data: string,
   useCase: string,
   summaryLength: number,
-  customOutputFormat: string
+  customOutputFormat: string = '',
 ): string {
   return `
         # GOAL:
@@ -116,7 +118,6 @@ export function generateSummarizationPrompt(
     `;
 }
 
-
 export function generateClusterUpdatePrompt(
   clusters: ClusterTable | InitialClusterTable | string,
   data: ChatRecord[],
@@ -124,9 +125,8 @@ export function generateClusterUpdatePrompt(
   useCase: string,
   clusterNameLength: number,
   suggestionLimit: number,
-  customOutputFormat: string
+  customOutputFormat: string = '',
 ): string {
-
   return `
         # Goal: 
         Your goal is to review the given reference table based on the input data for the specified use case, then update the reference table if needed.
@@ -196,7 +196,7 @@ export function generateReviewPrompt(
   useCase: string,
   clusterNameLength: number,
   suggestionLimit: number,
-  customOutputFormat: string
+  customOutputFormat: string = '',
 ): string {
   return `
     # Goal: 
@@ -261,5 +261,5 @@ export default {
   generateReviewPrompt,
   summaryJsonSchema,
   InitialClusterListSchema,
-  UpdatedClusterListSchema
+  UpdatedClusterListSchema,
 };

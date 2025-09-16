@@ -6,6 +6,8 @@
     "build": "tsc",
     "cluster": "npm run build && node dist/runClustering.js",
     "cluster:watch": "tsc --watch",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
@@ -25,6 +27,7 @@
   },
   "devDependencies": {
     "@types/json-schema": "^7.0.15",
+    "prettier": "^3.3.3",
     "typescript": "^5.9.2"
   }
 }

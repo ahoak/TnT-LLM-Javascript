@@ -1,6 +1,5 @@
 import path from 'path';
-import { ollamaLLM } from './llmClient';
-import { azureOAI } from './azureOpenaAIClient';
+import { LLMClient } from './llmRouter';
 import {
   getParquetFiles,
   splitIntoBatches,
@@ -9,7 +8,7 @@ import {
   writeJSONLStream,
   normalizeConversation,
   safeJSONParse,
-  extractClusters
+  extractClusters,
 } from './utils';
 import { Semaphore } from './semaphore';
 import {
@@ -19,33 +18,33 @@ import {
   generateReviewPrompt,
   summaryJsonSchema,
   InitialClusterListSchema,
-  UpdatedClusterListSchema
+  UpdatedClusterListSchema,
 } from './clusterPrompts';
 import { ChatRecord, ClusterTable } from './types';
 
-
-
 /* ========================
-   Config
+  Prompt Config
 ======================== */
 
-const SUMMARY_CONCURRENCY = parseInt(process.env.SUMMARY_CONCURRENCY || '4', 10);
 const USE_CASE =
   'Primary area of interest. This will include the main topic of the conversation or any other specific subject that the user is interested in discussing or learning about.';
-const MAX_CLUSTERS = 5;
-const SUMMARY_LENGTH = 50;
-const CLUSTER_NAME_LENGTH = 3;
-const SUGGESTION_LIMIT = 20;
-
-const SUMMARIZE_DATA = false;
-const TRUNCATE_DATA = true;
-const DATA_LIMIT = 100;
-const NUMBER_OF_BATCHES = 20;
-
-
+const MAX_CLUSTERS = 5; // Max number of cluster labels for taxonomy
+const SUMMARY_LENGTH = 50; // Target summary length for chat message
+const CLUSTER_NAME_LENGTH = 3; // Max word count for cluster label title
+const SUGGESTION_LIMIT = 20; // Word count limit for cluster table suggestions 
 
 /* ========================
-   Main
+  Config
+======================== */
+
+const SUMMARIZE_DATA = false; // Should summarize chat messages for LLM input
+const TRUNCATE_DATA = true; // Should truncate chat messages for LLM input, this is a less costly approach than summarization
+const DATA_LIMIT = 100; // Max number of data rows to use from parquet file
+const NUMBER_OF_BATCHES = 20; // total number of batches (size of batch will be DATA_LIMIT/ NUMBER_OF_BATCHES)
+const SUMMARY_CONCURRENCY = parseInt(process.env.SUMMARY_CONCURRENCY || '4', 10);
+
+/* ========================
+  Main
 ======================== */
 
 async function main(): Promise<void> {
@@ -58,10 +57,11 @@ async function main(): Promise<void> {
 
   let dataToProcess: ChatRecord[] = parquetData;
 
+  // Step 2: reduce chat size with either token truncation or summarization
   // Optional truncation
   if (TRUNCATE_DATA) {
     console.log('Truncating each conversation to max token limit');
-    dataToProcess = parquetData.map(chat => {
+    dataToProcess = parquetData.map((chat) => {
       const conversationText = normalizeConversation(chat);
       const truncated = truncateWithTiktoken(conversationText, 250);
       return { ...chat, summary: truncated };
@@ -72,136 +72,133 @@ async function main(): Promise<void> {
 
   // Optional summarization
   if (SUMMARIZE_DATA) {
+    console.log('Starting Summarization task');
     const semaphore = new Semaphore(SUMMARY_CONCURRENCY);
     const summarized = await Promise.all(
-      dataToProcess.map(chat =>
+      dataToProcess.map((chat) =>
         semaphore.use(async () => {
-          const messageText = normalizeConversation(chat);
-            // Fixed argument passing (removed accidental assignments like data=message)
-          const prompt = generateSummarizationPrompt(
-            messageText,
-            USE_CASE,
-            SUMMARY_LENGTH,
-            ''
-          );
-
-          const summaryRaw = await azureOAI(prompt, summaryJsonSchema);
-          let summaryOut: string;
+          // uses 
+          const messageText = normalizeConversation(chat);// uses chat.context to concat message, if this key is not in your dataset, alter this function
+          const prompt = generateSummarizationPrompt(messageText, USE_CASE, SUMMARY_LENGTH);
+          const summaryRaw = await LLMClient(prompt, summaryJsonSchema, { failover: true });
           const parsed = safeJSONParse<{ summary?: string }>(summaryRaw);
-            // fallback to raw if not JSON or summary missing
-          summaryOut = parsed.ok && parsed.value.summary ? parsed.value.summary : summaryRaw;
-
+          const summaryOut = parsed.ok && parsed.value.summary ? parsed.value.summary : summaryRaw;
           const updated: ChatRecord = { ...chat, summary: summaryOut };
-          console.log(
-            `[summary] done id=${chat.id || chat.conversation_hash || '?'} | in-flight <= ${SUMMARY_CONCURRENCY}`
-          );
           return updated;
-        })
-      )
+        }),
+      ),
     );
-  writeJSONLStream(summarized, path.join(process.cwd(), 'outputs', `summaries_${timestamp}.jsonl`));
+
+    const summaryOutputPath = path.join(process.cwd(), 'outputs', `summaries_${timestamp}.jsonl`);
+    console.log(`Summarization completed. Summary output writing to ${summaryOutputPath}`);
+    // write out summaries so can reference later
+    writeJSONLStream(summarized, summaryOutputPath);
     dataToProcess = summarized;
-    console.log('Summarization completed for all data.');
   }
 
-  // Shuffle + batch
+  // Shuffle + batch data
   const batched = splitIntoBatches(shuffleInPlace([...dataToProcess]), NUMBER_OF_BATCHES);
   if (!batched.length) {
     console.error('No batches produced.');
     return;
   }
 
-  // Initial clusters
+  // Step 3: Generate initial seed cluster list based on initial clusters
   const initialBatch = batched[0];
   const taxonomyPrompt = generateInitialClustersPrompt(
     initialBatch,
     USE_CASE,
     MAX_CLUSTERS,
     CLUSTER_NAME_LENGTH,
-    ''
   );
 
-  const initialResponse = await azureOAI(taxonomyPrompt, InitialClusterListSchema);
-  console.log('Initial cluster response:', initialResponse);
+  const initialResponse = await LLMClient(taxonomyPrompt, InitialClusterListSchema, {
+    failover: true,
+  });
 
-  let clusterState: ClusterTable | null = null;
-  {
-    const parsed = safeJSONParse<ClusterTable>(initialResponse);
-    if (parsed.ok) {
-      clusterState = parsed.value;
-      console.log('Parsed initial clusters.');
-    } else {
-      console.error('Failed to parse initial cluster JSON:', parsed.error.message);
-    }
+  let updatedClusterList: ClusterTable | null = null;
+
+  const parsed = safeJSONParse<ClusterTable>(initialResponse);
+  if (parsed.ok) {
+    updatedClusterList = parsed.value;
+  } else {
+    console.error(`Failed to parse initial cluster JSON: ${parsed.error.message}`);
   }
+  console.log(`Generated seed clusters: ${JSON.stringify(updatedClusterList)}`);
 
-  // Iteratively update clusters
+  // Step 4: Iteratively update cluster list with each batch
+  console.log('Starting batch iterations');
   for (const batch of batched.slice(1)) {
-    if (!clusterState) {
+    if (!updatedClusterList) {
       console.error('No clusters available for assignment.');
       break;
     }
 
     const updatePrompt = generateClusterUpdatePrompt(
-      clusterState,
+      updatedClusterList,
       batch,
       MAX_CLUSTERS,
       USE_CASE,
       CLUSTER_NAME_LENGTH,
       SUGGESTION_LIMIT,
-      ''
     );
-    const updateResponse = await azureOAI(updatePrompt, UpdatedClusterListSchema);
-    console.log('Assignment response:', updateResponse);
+    const updateResponse = await LLMClient(updatePrompt, UpdatedClusterListSchema, {
+      failover: true,
+    });
 
     const parsed = safeJSONParse<ClusterTable>(updateResponse);
     if (parsed.ok) {
-      clusterState = parsed.value;
+      updatedClusterList = parsed.value;
     } else {
-      console.error('Failed to parse cluster JSON:', parsed.error.message);
+      console.error(`Failed to parse initial cluster JSON: ${parsed.error.message}`);
     }
+    console.log(`Updated cluster list: ${JSON.stringify(updatedClusterList)}`);
   }
 
-  console.log('Final clusters before review:', clusterState);
+  console.log('Final clusters before review:', updatedClusterList);
 
-  // Review taxonomy
-
-  if (!clusterState) {
+  // Step 5: LLM review final taxonomy
+  if (!updatedClusterList) {
     console.error('Error: Cant process final clusters. No clusters to review.');
     return;
   }
   const reviewPrompt = generateReviewPrompt(
-    clusterState,
+    updatedClusterList,
     MAX_CLUSTERS,
     USE_CASE,
     CLUSTER_NAME_LENGTH,
     SUGGESTION_LIMIT,
-    ''
   );
-  const reviewResponse = await azureOAI(reviewPrompt, UpdatedClusterListSchema);
+  const reviewResponse = await LLMClient(reviewPrompt, UpdatedClusterListSchema, {
+    failover: true,
+  });
 
-  let finalClusterList: ClusterTable = clusterState || {};
+  let finalClusterList: ClusterTable = updatedClusterList || {};
   const reviewParsed = safeJSONParse<ClusterTable>(reviewResponse);
   if (reviewParsed.ok) {
     finalClusterList = reviewParsed.value;
   } else {
-    console.error('Failed to parse reviewed cluster JSON:', reviewParsed.error.message);
+    console.error(`Failed to parse reviewed cluster JSON: ${reviewParsed.error.message}`);
   }
 
   console.log('Final reviewed clusters:', finalClusterList);
 
   const finalEntries = extractClusters(finalClusterList);
-  if (finalEntries) {
-    writeJSONLStream(
-      finalEntries,
-      path.join(process.cwd(), 'outputs', `finalClusterList_${timestamp}.jsonl`)
+  if (finalEntries && finalEntries.length > 0) {
+    const finalOutputsPath = path.join(
+      process.cwd(),
+      'outputs',
+      `finalClusterList_${timestamp}.jsonl`,
     );
+    // write final outputs to /outputs dir
+    console.log(`writing final outputs to: ${finalOutputsPath}`);
+    writeJSONLStream(finalEntries, finalOutputsPath);
   } else {
     console.error('No final cluster entries to write.');
   }
 }
 
-main().catch(err => {
+main().catch((err) => {
   console.error('Fatal error:', err);
   process.exitCode = 1;
 });

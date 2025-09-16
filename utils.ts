@@ -11,8 +11,6 @@ export interface ConversationMessage {
   [k: string]: any;
 }
 
-
-
 function unwrapParquetLists(obj: any): any {
   if (Array.isArray(obj)) return obj.map(unwrapParquetLists);
   if (obj && typeof obj === 'object') {
@@ -29,7 +27,9 @@ function unwrapParquetLists(obj: any): any {
   return obj;
 }
 
-export function safeJSONParse<T = any>(raw: string): { ok: true; value: T } | { ok: false; error: Error } {
+export function safeJSONParse<T = any>(
+  raw: string,
+): { ok: true; value: T } | { ok: false; error: Error } {
   try {
     return { ok: true, value: JSON.parse(raw) as T };
   } catch (e) {
@@ -57,7 +57,10 @@ export function extractClusters(obj: ClusterTable | null): ClusterEntry[] | null
   return obj.updatedTable ?? [];
 }
 
-export async function readParquetFile(filePath: string, recordLimit: number | null = null): Promise<ChatRecord[]> {
+export async function readParquetFile(
+  filePath: string,
+  recordLimit: number | null = null,
+): Promise<ChatRecord[]> {
   const allRecords: ChatRecord[] = [];
   try {
     const reader = await (parquet as any).ParquetReader.openFile(filePath);
@@ -77,7 +80,9 @@ export async function readParquetFile(filePath: string, recordLimit: number | nu
 }
 
 export async function getParquetFiles(recordLimit: number | null = null): Promise<ChatRecord[]> {
-  const dataDir = process.env.DATA_DIR ? path.resolve(process.env.DATA_DIR) : path.resolve(process.cwd(), 'data');
+  const dataDir = process.env.DATA_DIR
+    ? path.resolve(process.env.DATA_DIR)
+    : path.resolve(process.cwd(), 'data');
   if (process.env.DEBUG_PATHS) {
     console.log('[paths] DATA_DIR resolved to', dataDir);
   }
@@ -85,7 +90,7 @@ export async function getParquetFiles(recordLimit: number | null = null): Promis
     console.error('Data directory does not exist:', dataDir);
     return [];
   }
-  const files = fs.readdirSync(dataDir).filter(f => f.endsWith('.parquet'));
+  const files = fs.readdirSync(dataDir).filter((f) => f.endsWith('.parquet'));
   if (files.length === 0) {
     console.error('No parquet files found in the data directory.');
     return [];
@@ -107,7 +112,8 @@ export async function getParquetFiles(recordLimit: number | null = null): Promis
 }
 
 export function splitIntoBatches<T>(arr: T[], batchCount: number): T[][] {
-  if (!Number.isInteger(batchCount) || batchCount <= 0) throw new Error('batchCount must be a positive integer');
+  if (!Number.isInteger(batchCount) || batchCount <= 0)
+    throw new Error('batchCount must be a positive integer');
   const n = Math.min(batchCount, arr.length);
   const base = Math.floor(arr.length / n);
   let remainder = arr.length % n;
@@ -130,10 +136,14 @@ export function shuffleInPlace<T>(arr: T[]): T[] {
   return arr;
 }
 
-export function summariesToMarkdown(items: { id?: string; conversation_hash?: string; summary?: string }[]): string {
+export function summariesToMarkdown(
+  items: { id?: string; conversation_hash?: string; summary?: string }[],
+): string {
   return [
     '',
-    ...items.map(it => `## ${it.id ?? it.conversation_hash ?? '(no id)'}\n${it.summary || '*<no summary>*'}`)
+    ...items.map(
+      (it) => `## ${it.id ?? it.conversation_hash ?? '(no id)'}\n${it.summary || '*<no summary>*'}`,
+    ),
   ].join('\n');
 }
 
@@ -145,16 +155,41 @@ function getEncoding(): Tiktoken {
   return _encoding;
 }
 
-export interface TruncateOptions { addEllipsis?: boolean; returnMeta?: boolean; }
-export interface TruncateMeta { text: string; originalTokenCount: number; finalTokenCount: number; truncated: boolean; }
+export interface TruncateOptions {
+  addEllipsis?: boolean;
+  returnMeta?: boolean;
+}
+export interface TruncateMeta {
+  text: string;
+  originalTokenCount: number;
+  finalTokenCount: number;
+  truncated: boolean;
+}
 
-export function truncateWithTiktoken(str: string, maxTokens: number, opts: TruncateOptions & { returnMeta: true }): TruncateMeta;
-export function truncateWithTiktoken(str: string, maxTokens: number, opts?: TruncateOptions): string;
-export function truncateWithTiktoken(str: string, maxTokens: number, opts: TruncateOptions = {}): string | TruncateMeta {
+export function truncateWithTiktoken(
+  str: string,
+  maxTokens: number,
+  opts: TruncateOptions & { returnMeta: true },
+): TruncateMeta;
+export function truncateWithTiktoken(
+  str: string,
+  maxTokens: number,
+  opts?: TruncateOptions,
+): string;
+export function truncateWithTiktoken(
+  str: string,
+  maxTokens: number,
+  opts: TruncateOptions = {},
+): string | TruncateMeta {
   const { addEllipsis = true, returnMeta = false } = opts;
-  if (!str || typeof str !== 'string') return returnMeta ? { text: '', truncated: false, originalTokenCount: 0, finalTokenCount: 0 } : '';
+  if (!str || typeof str !== 'string')
+    return returnMeta
+      ? { text: '', truncated: false, originalTokenCount: 0, finalTokenCount: 0 }
+      : '';
   if (!Number.isInteger(maxTokens) || maxTokens <= 0) {
-    return returnMeta ? { text: str, truncated: false, originalTokenCount: 0, finalTokenCount: 0 } : str;
+    return returnMeta
+      ? { text: str, truncated: false, originalTokenCount: 0, finalTokenCount: 0 }
+      : str;
   }
   const enc = getEncoding();
   const tokenIds = enc.encode(str);
@@ -163,7 +198,12 @@ export function truncateWithTiktoken(str: string, maxTokens: number, opts: Trunc
   let text = enc.decode(usedIds);
   if (over && addEllipsis) text = text.trimEnd() + ' ...';
   if (returnMeta) {
-    return { text, originalTokenCount: tokenIds.length, finalTokenCount: usedIds.length + (addEllipsis && over ? 1 : 0), truncated: over };
+    return {
+      text,
+      originalTokenCount: tokenIds.length,
+      finalTokenCount: usedIds.length + (addEllipsis && over ? 1 : 0),
+      truncated: over,
+    };
   }
   return text;
 }
@@ -187,15 +227,15 @@ export function writeJSONLStream<T>(items: T[], filePath: string): void {
 
 export const TEXT_OUTPUT_FORMAT = `# Output:\n  ## Please provide your answer between the tags: <category-id>your idenfied category id </category-id\n  <category-name>your identified category name</category-name>\n  <explanation>your explanation</explanation>\n`;
 
-export default { 
-    getParquetFiles, 
-    splitIntoBatches, 
-    shuffleInPlace, 
-    summariesToMarkdown, 
-    truncateWithTiktoken, 
-    writeJSONLStream, 
-    safeJSONParse,
-    normalizeConversation,
-    extractClusters,
-    TEXT_OUTPUT_FORMAT 
+export default {
+  getParquetFiles,
+  splitIntoBatches,
+  shuffleInPlace,
+  summariesToMarkdown,
+  truncateWithTiktoken,
+  writeJSONLStream,
+  safeJSONParse,
+  normalizeConversation,
+  extractClusters,
+  TEXT_OUTPUT_FORMAT,
 };
