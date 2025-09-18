@@ -160,3 +160,14 @@ Directory highlights:
 - `chatApp/backend` – Express server, classification, retrieval, offer logic.
 - `chatApp/frontend` – React UI (badges, offers sidebar, travel theme).
 - `chatApp/shared` – JSON taxonomies (intents, booking phases, offers) + images.
+
+## Microsoft Research blog series: Semantic Telemetry
+
+Learn more about the ideas that inspired parts of this repo and how to apply them at scale:
+
+- Semantic Telemetry: Understanding how users interact with AI systems:
+  https://www.microsoft.com/en-us/research/blog/semantic-telemetry-understanding-how-users-interact-with-ai-systems/
+- Engagement, user expertise, and satisfaction — key insights from the Semantic Telemetry project:
+  https://www.microsoft.com/en-us/research/blog/engagement-user-expertise-and-satisfaction-key-insights-from-the-semantic-telemetry-project/
+- Technical approach for classifying human–AI interactions at scale:
+  https://www.microsoft.com/en-us/research/blog/technical-approach-for-classifying-human-ai-interactions-at-scale/
