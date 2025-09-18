@@ -33,5 +33,6 @@ This will (if configured in the root scripts) start the backend and frontend (or
 If using environment‑based model backends (Azure OpenAI or Ollama) ensure you have the necessary env vars set at the repo root before starting so the backend can classify with a live model. Without them, you may see empty or stubbed classification results.
 
 ## Environment Variables (Optional)
-
-See parent repo `README.md` for the full list (`LLM_PROVIDER`, Azure auth vars, Ollama settings). Place them in a `.env` in `/backend` folder
+Place env vars in a `.env` in `/backend` folder. To set LLM:
+CHATAPP_LLM_PROVIDER=<ollama> // or azure 
+See parent repo `README.md` for the full list (`LLM_PROVIDER`, Azure auth vars, Ollama settings). 

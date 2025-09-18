@@ -17,8 +17,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 
-import { azureOAI, azureOAIStream } from './azureOpenAIClient.js';
-import { ollamaLLM } from './ollamaClient.js';
+import { LLMStream, LLMInvoke } from './llmRouter.js';
 import {
   generateSystemPrompt,
   generateClassifyBookingPrompt,
@@ -109,7 +108,7 @@ app.post('/api/chat', async (req: Request, res: Response) => {
     let assembled = '';
 
     try {
-      for await (const delta of azureOAIStream(history)) {
+  for await (const delta of LLMStream(history, undefined, { failover: true })) {
         assembled += delta;
         const sse: ChatResponseChunk = {
           id: assistantMessageId,
@@ -146,7 +145,7 @@ app.post('/api/chat', async (req: Request, res: Response) => {
   }
 
   // Non-streaming path-not used
-  const llmContent = await ollamaLLM(lastUserMsg.content, jsonSchema, { model, options });
+  const llmContent = await LLMInvoke(lastUserMsg.content, jsonSchema, { modelParameters: { model }, failover: true });
   const assistantMessage: ChatMessage = {
     id: nanoid(),
     role: 'assistant',
@@ -168,7 +167,7 @@ async function classifyDesitinationRecord(
   retrievalContext: string,
 ): Promise<NormalizedTourRecord[]> {
   const prompt = generateClassifyDestinationRecord(userMessage, retrievalContext);
-  const raw = await azureOAI(prompt, destinationRecordSchema);
+  const raw = await LLMInvoke(prompt, destinationRecordSchema, { failover: true });
   if (!raw) {
     console.error('LLM returned no response for destination record classification');
     return [];
@@ -188,8 +187,8 @@ async function classifyDesitinationRecord(
 async function classifyUserIntent(userMessage: string): Promise<ClassificationResponse | null> {
   const intentPrompt = generateClassifyIntentPrompt(userMessage);
   const bookingPrompt = generateClassifyBookingPrompt(userMessage);
-  const bookingResponse = await azureOAI(bookingPrompt, metadataLabelsSchema);
-  const intentResponse = await azureOAI(intentPrompt, metadataIntentLabelsSchema);
+  const bookingResponse = await LLMInvoke(bookingPrompt, metadataLabelsSchema, { failover: true });
+  const intentResponse = await LLMInvoke(intentPrompt, metadataIntentLabelsSchema, { failover: true });
   const bookingParsed = safeJSONParse<MetaDataLabels>(bookingResponse);
   const intentParsed = safeJSONParse<MetaDataLabels>(intentResponse);
   let labels: MetaDataLabels = bookingParsed.ok ? bookingParsed.value : {};
@@ -204,7 +203,7 @@ async function getFakePersonalizedContent(
   bookingMetadataLabels: ClassificationResponse,
 ): Promise<ClassificationResponse | null> {
   const prompt = generateAdvertisementPrompt(userMessage, bookingMetadataLabels);
-  const raw = await azureOAI(prompt, adSchema);
+  const raw = await LLMInvoke(prompt, adSchema, { failover: true });
 
   const parsed = safeJSONParse<MetaDataLabels>(raw);
   let labels: ClassificationAdResponse = {};
@@ -237,7 +236,6 @@ app.post('/api/classify-chat', async (req: Request, res: Response) => {
   const transcript = history
     .map((m) => (m.role === 'assistant' ? 'AI' : 'User') + ': ' + m.content)
     .join('\n');
-  // truncate transcript 250 tokens
   const resp = await classifyUserIntent(transcript);
   const adResponse = await getFakePersonalizedContent(transcript, resp || {});
   const combiningResponse = { ...resp, ...adResponse };
